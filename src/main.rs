@@ -67,6 +67,7 @@ impl Iterator for RungeKuttaIntegrator {
     }
 }
 
+#[allow(dead_code)]
 fn ham_eom_1d_harmonic_oscillator(_t: f32, pq: &Array1<f32>, dest: &mut Array1<f32>) {
     // H = p^2 / (2 * m) + k * q^2 / 2
     // \partial_q H = k * q
@@ -79,17 +80,39 @@ fn ham_eom_1d_harmonic_oscillator(_t: f32, pq: &Array1<f32>, dest: &mut Array1<f
     dest[1] = pq[0] / m;
 }
 
+#[allow(dead_code)]
+fn ham_eom_3d_harmonic_oscillator(_t: f32, pq: &Array1<f32>, dest: &mut Array1<f32>) {
+    let m: f32 = 1.0;
+    let k: f32 = 0.5;
+
+    dest[0] = -k * pq[3];
+    dest[1] = -k * pq[4];
+    dest[2] = 0.0;
+    dest[3] = pq[0] / m;
+    dest[4] = pq[1] / m;
+    dest[5] = pq[2] / m;
+}
+
 fn main() {
+    // let params = IntegrationParams {
+    //     step_size: 0.01,
+    //     t0: 0.0,
+    //     pq0: array![0.0, 1.0],
+    //     tmax: 10.0,
+    // };
+
+    // let rk4 = RungeKuttaIntegrator::new(params, ham_eom_1d_harmonic_oscillator);
+
     let params = IntegrationParams {
         step_size: 0.01,
         t0: 0.0,
-        pq0: array![0.0, 1.0],
+        pq0: array![0.0, 0.5, 0.8, -0.3, 0.4, 0.0],
         tmax: 10.0,
     };
 
-    let rk4 = RungeKuttaIntegrator::new(params, ham_eom_1d_harmonic_oscillator);
+    let rk4 = RungeKuttaIntegrator::new(params, ham_eom_3d_harmonic_oscillator);
 
     for state in rk4 {
-        println!("{} {} {}", state.0, state.1[0], state.1[1]);
+        println!("{} {}", state.0, state.1);
     }
 }
