@@ -3,6 +3,7 @@ use crate::rungekutta::*;
 use crate::visual::Stage;
 use miniquad::conf;
 use ndarray::{array, Array1};
+use physics::TwoBodyHamiltonian;
 
 mod physics;
 mod rungekutta;
@@ -35,18 +36,6 @@ fn ham_eom_3d_harmonic_oscillator(_t: f32, pq: &Array1<f32>, dest: &mut Array1<f
 }
 
 #[allow(dead_code)]
-fn ham_eom_two_body(_t: f32, pq: &PhaseSpaceVector, dest: &mut PhaseSpaceVector) {
-    let m = 1.0;
-    let k = 1.5;
-
-    let r = (pq.q[0] * pq.q[0] + pq.q[1] * pq.q[1]).sqrt();
-    let r3 = f32::powi(r, 3);
-
-    dest.p = -k * &pq.q / r3;
-    dest.q = &pq.p / m;
-}
-
-#[allow(dead_code)]
 fn ham_eom_isoceles_three_body(_t: f32, pq: &Array1<f32>, dest: &mut Array1<f32>) {
     let m: f32 = 1.0;
     let m3: f32 = 1.5;
@@ -66,37 +55,16 @@ fn ham_eom_isoceles_three_body(_t: f32, pq: &Array1<f32>, dest: &mut Array1<f32>
 }
 
 fn main() {
-    // let params = IntegrationParams {
-    //     step_size: 0.01,
-    //     t0: 0.0,
-    //     pq0: array![0.0, 1.0],
-    //     tmax: 10.0,
-    // };
-
-    // let rk4 = RungeKuttaIntegrator::new(params, ham_eom_1d_harmonic_oscillator);
+    let twobodyham = TwoBodyHamiltonian::new(1.0, 1.5);
 
     let params = IntegrationParams {
         step_size: 0.01,
         t0: 0.0,
-        pq0: PhaseSpaceVector::new(array![0.0, 0.5], array![0.8, 0.0]),
+        pq0: PhaseSpaceVector::new(array![0.0, 0.2, 0.0, -0.5], array![0.3, 0.0, -0.4, 0.0]),
         tmax: None,
     };
 
-    let rk4 = RungeKuttaIntegrator::new(params, ham_eom_two_body);
-
-    // let params = IntegrationParams {
-    //     step_size: 0.01,
-    //     t0: 0.0,
-    //     pq0: array![0.0, 0.5, 0.8, -0.3, 0.4, 0.0],
-    //     tmax: 10.0,
-    // };
-
-    // let rk4 = RungeKuttaIntegrator::new(params, ham_eom_3d_harmonic_oscillator);
-    // let rk4 = RungeKuttaIntegrator::new(params, ham_eom_isoceles_three_body);
-
-    // for state in rk4 {
-    //  println!("{} {}", state.0, state.1);
-    // }
+    let rk4 = RungeKuttaIntegrator::new(params, Box::new(twobodyham));
 
     let conf = conf::Conf::default();
 

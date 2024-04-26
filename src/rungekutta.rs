@@ -1,4 +1,4 @@
-use crate::PhaseSpaceVector;
+use crate::{physics::Hamiltonian, PhaseSpaceVector};
 use ndarray::Array;
 
 pub struct IntegrationParams {
@@ -9,8 +9,9 @@ pub struct IntegrationParams {
 }
 
 pub struct RungeKuttaIntegrator {
-    params: IntegrationParams,
-    func: fn(f32, &PhaseSpaceVector, &mut PhaseSpaceVector),
+    pub params: IntegrationParams,
+    // func: fn(f32, &PhaseSpaceVector, &mut PhaseSpaceVector),
+    pub ham: Box<dyn Hamiltonian>,
     t: f32,
     pq: PhaseSpaceVector,
     k1: PhaseSpaceVector,
@@ -22,7 +23,8 @@ pub struct RungeKuttaIntegrator {
 impl RungeKuttaIntegrator {
     pub fn new(
         params: IntegrationParams,
-        func: fn(f32, &PhaseSpaceVector, &mut PhaseSpaceVector),
+        // func: fn(f32, &PhaseSpaceVector, &mut PhaseSpaceVector),
+        ham: Box<dyn Hamiltonian>,
     ) -> RungeKuttaIntegrator {
         let t = params.t0;
         let pq = params.pq0.clone();
@@ -30,7 +32,8 @@ impl RungeKuttaIntegrator {
 
         RungeKuttaIntegrator {
             params,
-            func,
+            // func,
+            ham,
             t,
             pq,
             k1: PhaseSpaceVector::new(Array::zeros(dim), Array::zeros(dim)),
@@ -54,14 +57,14 @@ impl Iterator for RungeKuttaIntegrator {
         } else {
             let h = self.params.step_size;
             let h2 = h * 0.5;
-            let f = self.func;
+            // let f = self.ham.eom;
             let t = self.t;
             let pq = &self.pq;
 
-            f(t, pq, &mut self.k1);
-            f(t + h2, &(pq + h2 * &self.k1), &mut self.k2);
-            f(t + h2, &(pq + h2 * &self.k2), &mut self.k3);
-            f(t + h, &(pq + h * &self.k3), &mut self.k4);
+            self.ham.eom(t, pq, &mut self.k1);
+            self.ham.eom(t + h2, &(pq + h2 * &self.k1), &mut self.k2);
+            self.ham.eom(t + h2, &(pq + h2 * &self.k2), &mut self.k3);
+            self.ham.eom(t + h, &(pq + h * &self.k3), &mut self.k4);
 
             self.t += h;
 

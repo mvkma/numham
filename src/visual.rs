@@ -115,22 +115,16 @@ impl Stage {
 
 impl EventHandler for Stage {
     fn update(&mut self) {
-        // let t = date::now();
-
         let state = self.integrator.next();
 
         if let Some((_t, pq)) = state {
-            self.uniforms.blobs_positions[0].0 = pq.q[0] + 0.5;
-            self.uniforms.blobs_positions[0].1 = pq.q[1] + 0.5;
+            let positions = self.integrator.ham.positions(&pq);
+
+            (0..positions.len()).for_each(|i| {
+                self.uniforms.blobs_positions[i].0 = positions[i][0] + 0.5;
+                self.uniforms.blobs_positions[i].1 = positions[i][1] + 0.5;
+            });
         }
-
-        // for i in 0..self.uniforms.blobs_count as usize {
-        //     let t = t + i as f64 * 0.3;
-
-        //     let phi = consts::PI / 3.0 * i as f64;
-        //     self.uniforms.blobs_positions[i].0 = 0.5 + ((3.0 * t + phi).sin() as f32) * 0.5;
-        //     self.uniforms.blobs_positions[i].1 = 0.5 + ((1.0 * t + phi).cos() as f32) * 0.5;
-        // }
     }
 
     fn draw(&mut self) {

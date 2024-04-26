@@ -1,4 +1,4 @@
-use ndarray::Array1;
+use ndarray::{s, Array1, ArrayView1};
 use std::ops::{Add, Mul};
 
 #[derive(Clone)]
@@ -83,5 +83,43 @@ impl Mul<PhaseSpaceVector> for f32 {
             p: self * rhs.p,
             q: self * rhs.q,
         }
+    }
+}
+
+pub trait Hamiltonian {
+    fn eom(&self, t: f32, pq: &PhaseSpaceVector, pqdot: &mut PhaseSpaceVector);
+    fn positions<'a>(&'a self, pq: &'a PhaseSpaceVector) -> Vec<ArrayView1<f32>>;
+    fn momenta<'a>(&'a self, pq: &'a PhaseSpaceVector) -> Vec<ArrayView1<f32>>;
+}
+
+pub struct TwoBodyHamiltonian {
+    m: f32,
+    k: f32,
+}
+
+impl TwoBodyHamiltonian {
+    pub fn new(m: f32, k: f32) -> Self {
+        TwoBodyHamiltonian { m, k }
+    }
+}
+
+impl Hamiltonian for TwoBodyHamiltonian {
+    fn eom(&self, _t: f32, pq: &PhaseSpaceVector, pqdot: &mut PhaseSpaceVector) {
+        let pos = self.positions(pq);
+        let r10 = &pos[1] - &pos[0];
+
+        let r = (r10[0] * r10[0] + r10[1] * r10[1]).sqrt();
+        let r3 = f32::powi(r, 3);
+
+        pqdot.p = -self.k * &pq.q / r3;
+        pqdot.q = &pq.p / self.m;
+    }
+
+    fn positions<'a>(&'a self, pq: &'a PhaseSpaceVector) -> Vec<ArrayView1<f32>> {
+        vec![pq.q.slice(s![0..2]), pq.q.slice(s![2..4])]
+    }
+
+    fn momenta<'a>(&'a self, pq: &'a PhaseSpaceVector) -> Vec<ArrayView1<f32>> {
+        vec![pq.p.slice(s![0..2]), pq.p.slice(s![2..4])]
     }
 }
