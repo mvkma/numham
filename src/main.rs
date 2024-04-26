@@ -1,7 +1,10 @@
 use crate::rungekutta::*;
+use crate::visual::Stage;
+use miniquad::conf;
 use ndarray::{array, Array1};
 
 mod rungekutta;
+mod visual;
 
 #[allow(dead_code)]
 fn ham_eom_1d_harmonic_oscillator(_t: f32, pq: &Array1<f32>, dest: &mut Array1<f32>) {
@@ -71,4 +74,7 @@ fn main() {
     for state in rk4 {
         println!("{} {}", state.0, state.1);
     }
+
+    let conf = conf::Conf::default();
+    miniquad::start(conf, move || Box::new(Stage::new()));
 }
