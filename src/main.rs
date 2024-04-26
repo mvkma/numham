@@ -1,8 +1,10 @@
+use crate::physics::PhaseSpaceVector;
 use crate::rungekutta::*;
 use crate::visual::Stage;
 use miniquad::conf;
 use ndarray::{array, Array1};
 
+mod physics;
 mod rungekutta;
 mod visual;
 
@@ -30,6 +32,18 @@ fn ham_eom_3d_harmonic_oscillator(_t: f32, pq: &Array1<f32>, dest: &mut Array1<f
     dest[3] = pq[0] / m;
     dest[4] = pq[1] / m;
     dest[5] = pq[2] / m;
+}
+
+#[allow(dead_code)]
+fn ham_eom_two_body(_t: f32, pq: &PhaseSpaceVector, dest: &mut PhaseSpaceVector) {
+    let m = 1.0;
+    let k = 1.5;
+
+    let r = (pq.q[0] * pq.q[0] + pq.q[1] * pq.q[1]).sqrt();
+    let r3 = f32::powi(r, 3);
+
+    dest.p = -k * &pq.q / r3;
+    dest.q = &pq.p / m;
 }
 
 #[allow(dead_code)]
@@ -64,17 +78,27 @@ fn main() {
     let params = IntegrationParams {
         step_size: 0.01,
         t0: 0.0,
-        pq0: array![0.0, 0.5, 0.8, -0.3, 0.4, 0.0],
-        tmax: 10.0,
+        pq0: PhaseSpaceVector::new(array![0.0, 0.5], array![0.8, 0.0]),
+        tmax: None,
     };
 
-    // let rk4 = RungeKuttaIntegrator::new(params, ham_eom_3d_harmonic_oscillator);
-    let rk4 = RungeKuttaIntegrator::new(params, ham_eom_isoceles_three_body);
+    let rk4 = RungeKuttaIntegrator::new(params, ham_eom_two_body);
 
-    for state in rk4 {
-        println!("{} {}", state.0, state.1);
-    }
+    // let params = IntegrationParams {
+    //     step_size: 0.01,
+    //     t0: 0.0,
+    //     pq0: array![0.0, 0.5, 0.8, -0.3, 0.4, 0.0],
+    //     tmax: 10.0,
+    // };
+
+    // let rk4 = RungeKuttaIntegrator::new(params, ham_eom_3d_harmonic_oscillator);
+    // let rk4 = RungeKuttaIntegrator::new(params, ham_eom_isoceles_three_body);
+
+    // for state in rk4 {
+    //  println!("{} {}", state.0, state.1);
+    // }
 
     let conf = conf::Conf::default();
-    miniquad::start(conf, move || Box::new(Stage::new()));
+
+    miniquad::start(conf, move || Box::new(Stage::new(rk4)));
 }

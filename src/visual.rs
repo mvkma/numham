@@ -2,6 +2,8 @@ use std::f64::consts;
 
 use miniquad::*;
 
+use crate::RungeKuttaIntegrator;
+
 #[repr(C)]
 struct Vec2 {
     x: f32,
@@ -18,11 +20,12 @@ pub struct Stage {
     pipeline: Pipeline,
     bindings: Bindings,
     uniforms: shader::Uniforms,
+    integrator: RungeKuttaIntegrator,
     ctx: Box<dyn RenderingBackend>,
 }
 
 impl Stage {
-    pub fn new() -> Stage {
+    pub fn new(integrator: RungeKuttaIntegrator) -> Stage {
         let mut ctx: Box<dyn RenderingBackend> = window::new_rendering_backend();
 
         let s = 1.0; // size of bounding box
@@ -88,13 +91,23 @@ impl Stage {
 
         let uniforms = shader::Uniforms {
             blobs_count: 8,
-            blobs_positions: [(0.0, 0.0); 8],
+            blobs_positions: [
+                (-10.0, -10.0),
+                (0.5, 0.5),
+                (0.0, 0.0),
+                (0.0, 0.0),
+                (0.0, 0.0),
+                (0.0, 0.0),
+                (0.0, 0.0),
+                (0.0, 0.0),
+            ],
         };
 
         Stage {
             pipeline,
             bindings,
             uniforms,
+            integrator,
             ctx,
         }
     }
@@ -102,15 +115,22 @@ impl Stage {
 
 impl EventHandler for Stage {
     fn update(&mut self) {
-        let t = date::now();
+        // let t = date::now();
 
-        for i in 0..self.uniforms.blobs_count as usize {
-            // let t = t + i as f64 * 0.3;
+        let state = self.integrator.next();
 
-            let phi = consts::PI / 3.0 * i as f64;
-            self.uniforms.blobs_positions[i].0 = 0.5 + ((3.0 * t + phi).sin() as f32) * 0.5;
-            self.uniforms.blobs_positions[i].1 = 0.5 + ((1.0 * t + phi).cos() as f32) * 0.5;
+        if let Some((_t, pq)) = state {
+            self.uniforms.blobs_positions[0].0 = pq.q[0] + 0.5;
+            self.uniforms.blobs_positions[0].1 = pq.q[1] + 0.5;
         }
+
+        // for i in 0..self.uniforms.blobs_count as usize {
+        //     let t = t + i as f64 * 0.3;
+
+        //     let phi = consts::PI / 3.0 * i as f64;
+        //     self.uniforms.blobs_positions[i].0 = 0.5 + ((3.0 * t + phi).sin() as f32) * 0.5;
+        //     self.uniforms.blobs_positions[i].1 = 0.5 + ((1.0 * t + phi).cos() as f32) * 0.5;
+        // }
     }
 
     fn draw(&mut self) {
@@ -159,7 +179,7 @@ mod shader {
             color = vec4(0.0, 0.0, 0.0, 1.0);
             for (int i = 0; i < 8; i++) {
                 float d = distance(coord, blobs_positions[i]);
-                if (d < 0.1) {
+                if (d < 0.01) {
                     color = vec4(1.0, 0.0, 0.0, 1.0);
                 }
             }
