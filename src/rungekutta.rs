@@ -10,7 +10,6 @@ pub struct IntegrationParams {
 
 pub struct RungeKuttaIntegrator {
     pub params: IntegrationParams,
-    // func: fn(f32, &PhaseSpaceVector, &mut PhaseSpaceVector),
     pub ham: Box<dyn Hamiltonian>,
     t: f32,
     pq: PhaseSpaceVector,
@@ -21,18 +20,13 @@ pub struct RungeKuttaIntegrator {
 }
 
 impl RungeKuttaIntegrator {
-    pub fn new(
-        params: IntegrationParams,
-        // func: fn(f32, &PhaseSpaceVector, &mut PhaseSpaceVector),
-        ham: Box<dyn Hamiltonian>,
-    ) -> RungeKuttaIntegrator {
+    pub fn new(params: IntegrationParams, ham: Box<dyn Hamiltonian>) -> RungeKuttaIntegrator {
         let t = params.t0;
         let pq = params.pq0.clone();
         let dim = pq.p.raw_dim();
 
         RungeKuttaIntegrator {
             params,
-            // func,
             ham,
             t,
             pq,
@@ -57,7 +51,6 @@ impl Iterator for RungeKuttaIntegrator {
         } else {
             let h = self.params.step_size;
             let h2 = h * 0.5;
-            // let f = self.ham.eom;
             let t = self.t;
             let pq = &self.pq;
 
