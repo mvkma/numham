@@ -14,16 +14,22 @@ struct Vertex {
     uv: Vec2,
 }
 
+pub struct StageConf {
+    pub scale: f32,
+    pub steps_per_frame: u32,
+}
+
 pub struct Stage {
     pipeline: Pipeline,
     bindings: Bindings,
     uniforms: shader::Uniforms,
     integrator: RungeKuttaIntegrator,
+    conf: StageConf,
     ctx: Box<dyn RenderingBackend>,
 }
 
 impl Stage {
-    pub fn new(integrator: RungeKuttaIntegrator) -> Stage {
+    pub fn new(conf: StageConf, integrator: RungeKuttaIntegrator) -> Stage {
         let mut ctx: Box<dyn RenderingBackend> = window::new_rendering_backend();
 
         let s = 1.0; // size of bounding box
@@ -106,6 +112,7 @@ impl Stage {
             bindings,
             uniforms,
             integrator,
+            conf,
             ctx,
         }
     }
@@ -113,14 +120,18 @@ impl Stage {
 
 impl EventHandler for Stage {
     fn update(&mut self) {
+        for _ in 1..self.conf.steps_per_frame {
+            self.integrator.next();
+        }
+
         let state = self.integrator.next();
 
         if let Some((_t, pq)) = state {
             let positions = self.integrator.ham.positions(&pq);
 
             (0..positions.len()).for_each(|i| {
-                self.uniforms.blobs_positions[i].0 = (positions[i][0] / 10.0 + 0.5) as f32;
-                self.uniforms.blobs_positions[i].1 = (positions[i][1] / 10.0 + 0.5) as f32;
+                self.uniforms.blobs_positions[i].0 = positions[i][0] as f32 / self.conf.scale + 0.5;
+                self.uniforms.blobs_positions[i].1 = positions[i][1] as f32 / self.conf.scale + 0.5;
             });
         }
     }
@@ -162,6 +173,17 @@ mod shader {
         uniform int blobs_count;
         uniform vec2 blobs_positions[8];
 
+        vec4 colors[8] = vec4[](
+            vec4(0.75, 1.0, 0.50, 1.0),
+            vec4(0.88, 0.88, 0.44, 1.0),
+            vec4(0.88, 0.62, 0.22, 1.0),
+            vec4(0.75, 0.50, 0.11, 1.0),
+            vec4(0.75, 0.38, 0.00, 1.0),
+            vec4(0.62, 0.25, 0.00, 1.0),
+            vec4(0.50, 0.094, 0.00, 1.0),
+            vec4(0.31, 0.0039, 0.062, 1.0)
+        );
+
         vec2 coord;
         vec4 color;
 
@@ -172,7 +194,7 @@ mod shader {
             for (int i = 0; i < 8; i++) {
                 float d = distance(coord, blobs_positions[i]);
                 if (d < 0.01) {
-                    color = vec4(1.0, 0.0, 0.0, 1.0);
+                    color = colors[i];
                 }
             }
             gl_FragColor = color;

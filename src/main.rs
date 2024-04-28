@@ -4,6 +4,7 @@ use crate::visual::Stage;
 use miniquad::conf;
 use ndarray::{array, Array1};
 use physics::{ThreeBodyHamiltonian, TwoBodyHamiltonian};
+use visual::StageConf;
 
 mod physics;
 mod rungekutta;
@@ -84,11 +85,16 @@ fn main() {
 
     let rk4 = RungeKuttaIntegrator::new(params, Box::new(threebodyham));
 
+    let stage_conf = StageConf {
+        scale: 10.0,
+        steps_per_frame: 5,
+    };
+
     let conf = conf::Conf {
         window_height: 600,
         window_width: 600,
         ..Default::default()
     };
 
-    miniquad::start(conf, move || Box::new(Stage::new(rk4)));
+    miniquad::start(conf, move || Box::new(Stage::new(stage_conf, rk4)));
 }
