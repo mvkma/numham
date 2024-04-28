@@ -1,5 +1,3 @@
-use std::f64::consts;
-
 use miniquad::*;
 
 use crate::RungeKuttaIntegrator;
@@ -121,8 +119,8 @@ impl EventHandler for Stage {
             let positions = self.integrator.ham.positions(&pq);
 
             (0..positions.len()).for_each(|i| {
-                self.uniforms.blobs_positions[i].0 = positions[i][0] + 0.5;
-                self.uniforms.blobs_positions[i].1 = positions[i][1] + 0.5;
+                self.uniforms.blobs_positions[i].0 = (positions[i][0] / 10.0 + 0.5) as f32;
+                self.uniforms.blobs_positions[i].1 = (positions[i][1] / 10.0 + 0.5) as f32;
             });
         }
     }

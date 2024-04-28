@@ -2,16 +2,16 @@ use crate::{physics::Hamiltonian, PhaseSpaceVector};
 use ndarray::Array;
 
 pub struct IntegrationParams {
-    pub step_size: f32,
-    pub t0: f32,
+    pub step_size: f64,
+    pub t0: f64,
     pub pq0: PhaseSpaceVector,
-    pub tmax: Option<f32>,
+    pub tmax: Option<f64>,
 }
 
 pub struct RungeKuttaIntegrator {
     pub params: IntegrationParams,
     pub ham: Box<dyn Hamiltonian>,
-    t: f32,
+    t: f64,
     pq: PhaseSpaceVector,
     k1: PhaseSpaceVector,
     k2: PhaseSpaceVector,
@@ -37,15 +37,15 @@ impl RungeKuttaIntegrator {
         }
     }
 
-    pub fn state(&self) -> (f32, PhaseSpaceVector) {
+    pub fn state(&self) -> (f64, PhaseSpaceVector) {
         (self.t, self.pq.clone())
     }
 }
 
 impl Iterator for RungeKuttaIntegrator {
-    type Item = (f32, PhaseSpaceVector);
+    type Item = (f64, PhaseSpaceVector);
 
-    fn next(&mut self) -> Option<(f32, PhaseSpaceVector)> {
+    fn next(&mut self) -> Option<(f64, PhaseSpaceVector)> {
         if self.params.tmax.is_some_and(|tmax| tmax >= self.t) {
             None
         } else {
