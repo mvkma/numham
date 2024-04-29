@@ -86,8 +86,8 @@ fn main() {
     let rk4 = RungeKuttaIntegrator::new(params, Box::new(threebodyham));
 
     let stage_conf = StageConf {
-        scale: 10.0,
-        steps_per_frame: 5,
+        scale: 2.0,
+        steps_per_frame: 10,
     };
 
     let conf = conf::Conf {
