@@ -4,8 +4,6 @@ use miniquad::*;
 
 use crate::RungeKuttaIntegrator;
 
-const TRAIL_LENGTH: usize = 2000;
-
 #[repr(C)]
 struct Vec2 {
     x: f32,
@@ -21,6 +19,7 @@ struct Vertex {
 pub struct StageConf {
     pub scale: f32,
     pub steps_per_frame: u32,
+    pub trail_length: usize,
 }
 
 pub struct Stage {
@@ -71,7 +70,7 @@ impl Stage {
         let pos_vertex_buffer = ctx.new_buffer(
             BufferType::VertexBuffer,
             BufferUsage::Stream,
-            BufferSource::empty::<Vec2>(TRAIL_LENGTH),
+            BufferSource::empty::<Vec2>(conf.trail_length),
         );
 
         let bindings = Bindings {
@@ -108,13 +107,15 @@ impl Stage {
 
         let uniforms = shader::Uniforms { blobs_count: 3 };
 
+        let positions = VecDeque::with_capacity(conf.trail_length);
+
         Stage {
             pipeline,
             bindings,
             uniforms,
             integrator,
             conf,
-            positions: VecDeque::with_capacity(TRAIL_LENGTH),
+            positions,
             ctx,
         }
     }
@@ -134,7 +135,7 @@ impl EventHandler for Stage {
             (0..positions.len()).for_each(|i| {
                 // self.uniforms.blobs_positions[i].0 = positions[i][0] as f32 / self.conf.scale + 0.5;
                 // self.uniforms.blobs_positions[i].1 = positions[i][1] as f32 / self.conf.scale + 0.5;
-                if self.positions.len() >= TRAIL_LENGTH {
+                if self.positions.len() >= self.conf.trail_length {
                     self.positions.pop_front();
                 }
 

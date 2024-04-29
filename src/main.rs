@@ -88,6 +88,7 @@ fn main() {
     let stage_conf = StageConf {
         scale: 2.0,
         steps_per_frame: 10,
+        trail_length: 2000,
     };
 
     let conf = conf::Conf {
