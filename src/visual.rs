@@ -11,9 +11,28 @@ struct Vec2 {
 }
 
 #[repr(C)]
-struct Vertex {
+struct Rgba {
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
+}
+
+impl Rgba {
+    fn new() -> Self {
+        Rgba {
+            r: 0.0,
+            b: 0.0,
+            g: 0.0,
+            a: 1.0,
+        }
+    }
+}
+
+#[repr(C)]
+struct Point {
     pos: Vec2,
-    uv: Vec2,
+    color: Rgba,
 }
 
 pub struct StageConf {
@@ -28,7 +47,7 @@ pub struct Stage {
     uniforms: shader::Uniforms,
     integrator: RungeKuttaIntegrator,
     conf: StageConf,
-    positions: VecDeque<Vec2>,
+    positions: VecDeque<Point>,
     ctx: Box<dyn RenderingBackend>,
 }
 
@@ -70,7 +89,7 @@ impl Stage {
         let pos_vertex_buffer = ctx.new_buffer(
             BufferType::VertexBuffer,
             BufferUsage::Stream,
-            BufferSource::empty::<Vec2>(conf.trail_length),
+            BufferSource::empty::<Point>(conf.trail_length),
         );
 
         let bindings = Bindings {
@@ -100,6 +119,7 @@ impl Stage {
             &[
                 VertexAttribute::with_buffer("in_pos", VertexFormat::Float2, 0),
                 VertexAttribute::with_buffer("in_inst_pos", VertexFormat::Float2, 1),
+                VertexAttribute::with_buffer("in_inst_col", VertexFormat::Float4, 1),
             ],
             shader,
             PipelineParams::default(),
@@ -133,15 +153,32 @@ impl EventHandler for Stage {
             let positions = self.integrator.ham.positions(&pq);
 
             (0..positions.len()).for_each(|i| {
-                // self.uniforms.blobs_positions[i].0 = positions[i][0] as f32 / self.conf.scale + 0.5;
-                // self.uniforms.blobs_positions[i].1 = positions[i][1] as f32 / self.conf.scale + 0.5;
+                if self.positions.len() >= positions.len() {
+                    self.positions
+                        .get_mut(self.positions.len() - positions.len())
+                        .unwrap()
+                        .color = Rgba {
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.5,
+                        a: 1.0,
+                    }
+                }
                 if self.positions.len() >= self.conf.trail_length {
                     self.positions.pop_front();
                 }
 
-                self.positions.push_back(Vec2 {
-                    x: positions[i][0] as f32 / self.conf.scale, //  + 0.5,
-                    y: positions[i][1] as f32 / self.conf.scale, //  + 0.5,
+                self.positions.push_back(Point {
+                    pos: Vec2 {
+                        x: positions[i][0] as f32 / self.conf.scale, //  + 0.5,
+                        y: positions[i][1] as f32 / self.conf.scale, //  + 0.5,
+                    },
+                    color: Rgba {
+                        r: 0.75,
+                        g: 1.0,
+                        b: 0.50,
+                        a: 1.0,
+                    },
                 });
             });
         }
@@ -173,20 +210,24 @@ mod shader {
     pub const VERTEX: &str = r#"#version 330 core
         attribute vec2 in_pos;
         attribute vec2 in_inst_pos;
+        attribute vec4 in_inst_col;
+
+        varying lowp vec4 color;
 
         void main() {
             gl_Position = vec4(in_pos + in_inst_pos, 0.0, 1.0);
+            color = in_inst_col;
         }"#;
 
     pub const FRAGMENT: &str = r#"#version 330 core
         // precision highp float;
 
-        // varying vec2 uv;
+        varying lowp vec4 color;
 
         uniform int blobs_count;
 
         void main() {
-            gl_FragColor = vec4(0.75, 1.0, 0.50, 1.0);
+            gl_FragColor = color;
         }
 
         // vec4 colors[8] = vec4[](
