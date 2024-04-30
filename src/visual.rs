@@ -154,15 +154,36 @@ impl EventHandler for Stage {
 
             (0..positions.len()).for_each(|i| {
                 if self.positions.len() >= positions.len() {
+                    let col = match i {
+                        0 => Rgba {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.5,
+                            a: 1.0,
+                        },
+                        1 => Rgba {
+                            r: 0.0,
+                            g: 0.5,
+                            b: 0.0,
+                            a: 1.0,
+                        },
+                        2 => Rgba {
+                            r: 0.5,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 1.0,
+                        },
+                        _ => Rgba {
+                            r: 0.5,
+                            g: 0.5,
+                            b: 0.5,
+                            a: 0.5,
+                        },
+                    };
                     self.positions
                         .get_mut(self.positions.len() - positions.len())
                         .unwrap()
-                        .color = Rgba {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.5,
-                        a: 1.0,
-                    }
+                        .color = col
                 }
                 if self.positions.len() >= self.conf.trail_length {
                     self.positions.pop_front();

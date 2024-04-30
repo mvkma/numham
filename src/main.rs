@@ -1,3 +1,7 @@
+#![feature(test)]
+
+extern crate test;
+
 use crate::physics::PhaseSpaceVector;
 use crate::rungekutta::*;
 use crate::visual::Stage;
@@ -71,10 +75,16 @@ fn main() {
 
     // let v1 = 0.3471168881;
     // let v2 = 0.5327249454;
-    let v1 = 0.6150407229;
-    let v2 = 0.5226158545;
+    // let v1 = 0.3068934205;
+    // let v2 = 0.1255065670;
+    // let v1 = 0.6150407229;
+    // let v2 = 0.5226158545;
+    let v1 = 0.5379557207;
+    let v2 = 0.3414578545;
+    // let v1 = 0.4112926910;
+    // let v2 = 0.2607551013;
     let params = IntegrationParams {
-        step_size: 0.01,
+        step_size: 0.001,
         t0: 0.0,
         pq0: PhaseSpaceVector::new(
             array![v1, v2, v1, v2, -2.0 * v1, -2.0 * v2],
@@ -87,15 +97,44 @@ fn main() {
 
     let stage_conf = StageConf {
         scale: 2.0,
-        steps_per_frame: 10,
-        trail_length: 2000,
+        steps_per_frame: 20,
+        trail_length: 5000,
     };
 
     let conf = conf::Conf {
-        window_height: 600,
-        window_width: 600,
+        window_height: 900,
+        window_width: 900,
         ..Default::default()
     };
 
     miniquad::start(conf, move || Box::new(Stage::new(stage_conf, rk4)));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test::Bencher;
+
+    #[bench]
+    fn bench_rk4_next(b: &mut Bencher) {
+        let v1 = 0.5379557207;
+        let v2 = 0.3414578545;
+
+        let params = IntegrationParams {
+            step_size: 0.001,
+            t0: 0.0,
+            pq0: PhaseSpaceVector::new(
+                array![v1, v2, v1, v2, -2.0 * v1, -2.0 * v2],
+                array![-1.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+            ),
+            tmax: None,
+        };
+
+        let threebodyham = ThreeBodyHamiltonian::new(1.0, 1.0);
+        let mut rk4 = RungeKuttaIntegrator::new(params, Box::new(threebodyham));
+
+        b.iter(|| {
+            rk4.next();
+        })
+    }
 }
