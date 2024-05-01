@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use miniquad::*;
+use ndarray::Axis;
 
 use crate::RungeKuttaIntegrator;
 
@@ -39,6 +40,7 @@ pub struct StageConf {
     pub scale: f32,
     pub steps_per_frame: u32,
     pub trail_length: usize,
+    pub nparticles: usize,
 }
 
 pub struct Stage {
@@ -150,58 +152,60 @@ impl EventHandler for Stage {
         let state = self.integrator.next();
 
         if let Some((_t, pq)) = state {
-            let positions = self.integrator.ham.positions(&pq);
+            let p = pq.index_axis(Axis(0), 1);
 
-            (0..positions.len()).for_each(|i| {
-                if self.positions.len() >= positions.len() {
-                    let col = match i {
-                        0 => Rgba {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.5,
-                            a: 1.0,
-                        },
-                        1 => Rgba {
-                            r: 0.0,
-                            g: 0.5,
-                            b: 0.0,
-                            a: 1.0,
-                        },
-                        2 => Rgba {
-                            r: 0.5,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 1.0,
-                        },
-                        _ => Rgba {
-                            r: 0.5,
-                            g: 0.5,
-                            b: 0.5,
-                            a: 0.5,
-                        },
-                    };
-                    self.positions
-                        .get_mut(self.positions.len() - positions.len())
-                        .unwrap()
-                        .color = col
-                }
-                if self.positions.len() >= self.conf.trail_length {
-                    self.positions.pop_front();
-                }
+            p.axis_chunks_iter(Axis(0), 2)
+                .enumerate()
+                .for_each(|(i, pos)| {
+                    if self.positions.len() >= self.conf.nparticles {
+                        let col = match i {
+                            0 => Rgba {
+                                r: 0.0,
+                                g: 0.0,
+                                b: 0.5,
+                                a: 1.0,
+                            },
+                            1 => Rgba {
+                                r: 0.0,
+                                g: 0.5,
+                                b: 0.0,
+                                a: 1.0,
+                            },
+                            2 => Rgba {
+                                r: 0.5,
+                                g: 0.0,
+                                b: 0.0,
+                                a: 1.0,
+                            },
+                            _ => Rgba {
+                                r: 0.5,
+                                g: 0.5,
+                                b: 0.5,
+                                a: 0.5,
+                            },
+                        };
+                        self.positions
+                            .get_mut(self.positions.len() - self.conf.nparticles)
+                            .unwrap()
+                            .color = col
+                    }
+                    if self.positions.len() >= self.conf.trail_length {
+                        self.positions.pop_front();
+                    }
 
-                self.positions.push_back(Point {
-                    pos: Vec2 {
-                        x: positions[i][0] as f32 / self.conf.scale, //  + 0.5,
-                        y: positions[i][1] as f32 / self.conf.scale, //  + 0.5,
-                    },
-                    color: Rgba {
-                        r: 0.75,
-                        g: 1.0,
-                        b: 0.50,
-                        a: 1.0,
-                    },
+                    self.positions.push_back(Point {
+                        pos: Vec2 {
+                            x: pos[0] as f32 / self.conf.scale, //  + 0.5,
+                            y: pos[1] as f32 / self.conf.scale, //  + 0.5,
+                        },
+                        color: Rgba {
+                            r: 0.75,
+                            g: 1.0,
+                            b: 0.50,
+                            a: 1.0,
+                        },
+                    });
                 });
-            });
         }
     }
 

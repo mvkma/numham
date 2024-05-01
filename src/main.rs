@@ -2,12 +2,11 @@
 
 extern crate test;
 
-use crate::physics::PhaseSpaceVector;
 use crate::rungekutta::*;
 use crate::visual::Stage;
 use miniquad::conf;
-use ndarray::{array, Array1};
-use physics::{ThreeBodyHamiltonian, TwoBodyHamiltonian};
+use ndarray::{array, stack, Array1, Axis};
+use physics::{Hamiltonian, ThreeBodyHamiltonian, TwoBodyHamiltonian};
 use visual::StageConf;
 
 mod physics;
@@ -73,32 +72,32 @@ fn main() {
 
     let threebodyham = ThreeBodyHamiltonian::new(1.0, 1.0);
 
-    // let v1 = 0.3471168881;
-    // let v2 = 0.5327249454;
+    let v1 = 0.3471168881;
+    let v2 = 0.5327249454;
     // let v1 = 0.3068934205;
     // let v2 = 0.1255065670;
     // let v1 = 0.6150407229;
     // let v2 = 0.5226158545;
-    let v1 = 0.5379557207;
-    let v2 = 0.3414578545;
+    // let v1 = 0.5379557207;
+    // let v2 = 0.3414578545;
     // let v1 = 0.4112926910;
     // let v2 = 0.2607551013;
     let params = IntegrationParams {
-        step_size: 0.001,
+        step_size: 0.01,
         t0: 0.0,
-        pq0: PhaseSpaceVector::new(
+        pq0: stack![
+            Axis(0),
             array![v1, v2, v1, v2, -2.0 * v1, -2.0 * v2],
             array![-1.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-        ),
+        ],
         tmax: None,
     };
 
-    let rk4 = RungeKuttaIntegrator::new(params, Box::new(threebodyham));
-
     let stage_conf = StageConf {
         scale: 2.0,
-        steps_per_frame: 20,
+        steps_per_frame: 1,
         trail_length: 5000,
+        nparticles: threebodyham.num_particles(),
     };
 
     let conf = conf::Conf {
@@ -106,6 +105,8 @@ fn main() {
         window_width: 900,
         ..Default::default()
     };
+
+    let rk4 = RungeKuttaIntegrator::new(params, Box::new(threebodyham));
 
     miniquad::start(conf, move || Box::new(Stage::new(stage_conf, rk4)));
 }
@@ -123,10 +124,11 @@ mod tests {
         let params = IntegrationParams {
             step_size: 0.001,
             t0: 0.0,
-            pq0: PhaseSpaceVector::new(
+            pq0: stack![
+                Axis(0),
                 array![v1, v2, v1, v2, -2.0 * v1, -2.0 * v2],
                 array![-1.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-            ),
+            ],
             tmax: None,
         };
 
