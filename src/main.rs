@@ -1,11 +1,12 @@
 #![feature(test)]
+#![recursion_limit = "512"]
 
 extern crate test;
 
 use crate::rungekutta::*;
 use crate::visual::Stage;
 use miniquad::conf;
-use ndarray::{array, stack, Array1, Axis};
+use ndarray::{array, concatenate, Array1, Axis};
 use physics::{Hamiltonian, ThreeBodyHamiltonian, TwoBodyHamiltonian};
 use visual::StageConf;
 
@@ -72,20 +73,20 @@ fn main() {
 
     let threebodyham = ThreeBodyHamiltonian::new(1.0, 1.0);
 
-    let v1 = 0.3471168881;
-    let v2 = 0.5327249454;
+    // let v1 = 0.3471168881;
+    // let v2 = 0.5327249454;
     // let v1 = 0.3068934205;
     // let v2 = 0.1255065670;
     // let v1 = 0.6150407229;
     // let v2 = 0.5226158545;
-    // let v1 = 0.5379557207;
-    // let v2 = 0.3414578545;
+    let v1 = 0.5379557207;
+    let v2 = 0.3414578545;
     // let v1 = 0.4112926910;
     // let v2 = 0.2607551013;
     let params = IntegrationParams {
-        step_size: 0.01,
+        step_size: 0.001,
         t0: 0.0,
-        pq0: stack![
+        pq0: concatenate![
             Axis(0),
             array![v1, v2, v1, v2, -2.0 * v1, -2.0 * v2],
             array![-1.0, 0.0, 1.0, 0.0, 0.0, 0.0],
@@ -95,7 +96,7 @@ fn main() {
 
     let stage_conf = StageConf {
         scale: 2.0,
-        steps_per_frame: 1,
+        steps_per_frame: 50,
         trail_length: 5000,
         nparticles: threebodyham.num_particles(),
     };
@@ -124,7 +125,7 @@ mod tests {
         let params = IntegrationParams {
             step_size: 0.001,
             t0: 0.0,
-            pq0: stack![
+            pq0: concatenate![
                 Axis(0),
                 array![v1, v2, v1, v2, -2.0 * v1, -2.0 * v2],
                 array![-1.0, 0.0, 1.0, 0.0, 0.0, 0.0],

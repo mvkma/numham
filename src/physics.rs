@@ -1,8 +1,8 @@
-use ndarray::{concatenate, s, ArrayView2, ArrayViewMut2, Axis};
+use ndarray::{concatenate, s, ArrayView1, ArrayViewMut1, Axis};
 use std::ops::{Div, Neg};
 
 pub trait Hamiltonian {
-    fn eom(&self, t: f64, pq: ArrayView2<f64>, pqdot: ArrayViewMut2<f64>);
+    fn eom(&self, t: f64, pq: ArrayView1<f64>, pqdot: ArrayViewMut1<f64>);
     fn num_particles(&self) -> usize;
 }
 
@@ -18,9 +18,12 @@ impl TwoBodyHamiltonian {
 }
 
 impl Hamiltonian for TwoBodyHamiltonian {
-    fn eom(&self, _t: f64, pq: ArrayView2<f64>, mut pqdot: ArrayViewMut2<f64>) {
-        let p = pq.index_axis(Axis(0), 0);
-        let q = pq.index_axis(Axis(0), 1);
+    fn eom(&self, _t: f64, pq: ArrayView1<f64>, mut pqdot: ArrayViewMut1<f64>) {
+        // let p = pq.index_axis(Axis(0), 0);
+        // let q = pq.index_axis(Axis(0), 1);
+        let n = 2 * self.num_particles();
+        let p = pq.slice(s![..n]);
+        let q = pq.slice(s![n..]);
 
         let r3 = (&q.slice(s![0..2]) - &q.slice(s![2..4]))
             .map(|x| x * x)
@@ -31,8 +34,10 @@ impl Hamiltonian for TwoBodyHamiltonian {
         let pdot = &q * self.k.neg().div(r3);
         let qdot = &p / self.m;
 
-        pqdot.index_axis_mut(Axis(0), 0).assign(&pdot);
-        pqdot.index_axis_mut(Axis(0), 1).assign(&qdot);
+        // pqdot.index_axis_mut(Axis(0), 0).assign(&pdot);
+        // pqdot.index_axis_mut(Axis(0), 1).assign(&qdot);
+        pqdot.slice_mut(s![..n]).assign(&pdot);
+        pqdot.slice_mut(s![n..]).assign(&qdot);
     }
 
     fn num_particles(&self) -> usize {
@@ -52,8 +57,10 @@ impl ThreeBodyHamiltonian {
 }
 
 impl Hamiltonian for ThreeBodyHamiltonian {
-    fn eom(&self, _t: f64, pq: ArrayView2<f64>, mut pqdot: ArrayViewMut2<f64>) {
-        let q = pq.index_axis(Axis(0), 1);
+    fn eom(&self, _t: f64, pq: ArrayView1<f64>, mut pqdot: ArrayViewMut1<f64>) {
+        // let q = pq.index_axis(Axis(0), 1);
+        let n = 2 * self.num_particles();
+        let q = pq.slice(s![n..]);
 
         let mut r01 = &q.slice(s![0..2]) - &q.slice(s![2..4]);
         let mut r02 = &q.slice(s![0..2]) - &q.slice(s![4..6]);
@@ -68,10 +75,13 @@ impl Hamiltonian for ThreeBodyHamiltonian {
         r12 /= r12_3 * self.k;
 
         let pdot = concatenate![Axis(0), -(&r01 + &r02), (&r01 - &r12), (&r02 + &r12)];
-        let qdot = &pq.index_axis(Axis(0), 0) / self.m;
+        // let qdot = &pq.index_axis(Axis(0), 0) / self.m;
+        let qdot = &pq.slice(s![..n]) / self.m;
 
-        pqdot.index_axis_mut(Axis(0), 0).assign(&pdot);
-        pqdot.index_axis_mut(Axis(0), 1).assign(&qdot);
+        // pqdot.index_axis_mut(Axis(0), 0).assign(&pdot);
+        // pqdot.index_axis_mut(Axis(0), 1).assign(&qdot);
+        pqdot.slice_mut(s![..n]).assign(&pdot);
+        pqdot.slice_mut(s![n..]).assign(&qdot);
     }
 
     fn num_particles(&self) -> usize {

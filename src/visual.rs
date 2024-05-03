@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use miniquad::*;
-use ndarray::Axis;
+use ndarray::{s, Axis};
 
 use crate::RungeKuttaIntegrator;
 
@@ -152,7 +152,8 @@ impl EventHandler for Stage {
         let state = self.integrator.next();
 
         if let Some((_t, pq)) = state {
-            let p = pq.index_axis(Axis(0), 1);
+            //let p = pq.index_axis(Axis(0), 1);
+            let p = pq.slice(s![2 * self.conf.nparticles..]);
 
             p.axis_chunks_iter(Axis(0), 2)
                 .enumerate()
