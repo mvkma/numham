@@ -13,7 +13,7 @@ pub struct IntegrationParams {
 pub struct RungeKuttaIntegrator {
     pub params: IntegrationParams,
     pub ham: Box<dyn Hamiltonian>,
-    t: f64,
+    pub t: f64,
     pq: Array1<f64>,
     pqdot: Array1<f64>,
     stages: Array2<f64>,
@@ -112,25 +112,35 @@ impl RungeKuttaIntegrator {
             }
 
             self.pq = h * self.stages.slice(s![..-1, ..]).t().dot(&self.b) + &self.pq;
-            self.t += h;
 
-            self.ham
-                .eom(self.t, self.pq.view(), self.stages.slice_mut(s![-1, ..]));
+            self.ham.eom(
+                self.t + h,
+                self.pq.view(),
+                self.stages.slice_mut(s![-1, ..]),
+            );
             self.pqdot.assign(&self.stages.slice(s![-1, ..]));
 
-            // let error = h * self
-            //     .stages
-            //     .slice(s![..-1, ..])
-            //     .t()
-            //     .dot(&(&self.b - &self.d));
-            // let err = error.dot(&error).powf(1.0 / 10.0);
-            // if err > 0.001 {
-            //     self.params.step_size /= 10.0;
-            //     println!("new step size: {}", self.params.step_size);
-            // } else if err < 0.00001 {
-            //     self.params.step_size *= 10.0;
-            //     println!("new step size: {}", self.params.step_size);
-            // }
+            let error = self
+                .stages
+                .slice(s![..-1, ..])
+                .t()
+                .dot(&(&self.b - &self.d));
+
+            let err = error.dot(&error).sqrt();
+            let hnew = (0.00000001 / err).powf(1.0 / 5.0) * h * 0.9;
+
+            if hnew < 0.001 {
+                self.params.step_size = hnew;
+            } else {
+                self.params.step_size = 0.001;
+            }
+
+            if hnew.is_nan() {
+                println!("err = {}", err);
+                panic!();
+            }
+
+            self.t += h;
 
             Some(self.state())
         }

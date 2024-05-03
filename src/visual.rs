@@ -39,6 +39,7 @@ struct Point {
 pub struct StageConf {
     pub scale: f32,
     pub steps_per_frame: u32,
+    pub dt: f64,
     pub trail_length: usize,
     pub nparticles: usize,
 }
@@ -50,6 +51,7 @@ pub struct Stage {
     integrator: RungeKuttaIntegrator,
     conf: StageConf,
     positions: VecDeque<Point>,
+    time: f64,
     ctx: Box<dyn RenderingBackend>,
 }
 
@@ -138,6 +140,7 @@ impl Stage {
             integrator,
             conf,
             positions,
+            time: 0.0,
             ctx,
         }
     }
@@ -145,10 +148,17 @@ impl Stage {
 
 impl EventHandler for Stage {
     fn update(&mut self) {
-        for _ in 1..self.conf.steps_per_frame {
+        // for _ in 1..self.conf.steps_per_frame {
+        //     self.integrator.next();
+        // }
+        let mut k = 0;
+        while self.integrator.t < self.time + self.conf.dt {
             self.integrator.next();
+            k += 1;
         }
+        println!("iterations: {}", k);
 
+        self.time += self.conf.dt;
         let state = self.integrator.next();
 
         if let Some((_t, pq)) = state {
