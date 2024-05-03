@@ -96,7 +96,7 @@ fn main() {
 
     let stage_conf = StageConf {
         scale: 2.0,
-        steps_per_frame: 50,
+        steps_per_frame: 100,
         trail_length: 5000,
         nparticles: threebodyham.num_particles(),
     };

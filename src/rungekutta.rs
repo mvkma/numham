@@ -31,7 +31,7 @@ impl RungeKuttaIntegrator {
         let dim = pq.raw_dim();
         let pqdot = Array::zeros(dim);
         // nstages + 1
-        let stages = stack![Axis(0), pqdot, pqdot, pqdot, pqdot, pqdot];
+        let stages = stack![Axis(0), pqdot, pqdot, pqdot, pqdot, pqdot, pqdot, pqdot];
 
         RungeKuttaIntegrator {
             params,
@@ -43,16 +43,44 @@ impl RungeKuttaIntegrator {
             // nstages - 1
             a: stack![
                 Axis(0),
-                array![0.5, 0.0, 0.0, 0.0],
-                array![0.0, 0.5, 0.0, 0.0],
-                array![0.0, 0.0, 1.0, 0.0],
+                // array![0.5, 0.0, 0.0],
+                // array![0.0, 0.5, 0.0],
+                // array![0.0, 0.0, 1.0],
+                array![1.0 / 4.0, 0.0, 0.0, 0.0, 0.0],
+                array![3.0 / 32.0, 9.0 / 32.0, 0.0, 0.0, 0.0],
+                array![1932.0 / 2197.0, -7200.0 / 2197.0, 7296.0 / 2197.0, 0.0, 0.0],
+                array![439.0 / 216.0, -8.0, 3680.0 / 513.0, -845.0 / 4104.0, 0.0],
+                array![
+                    -8.0 / 27.0,
+                    2.0,
+                    -3544.0 / 2565.0,
+                    1859.0 / 4104.0,
+                    -11.0 / 40.0
+                ],
             ],
             // nstages
-            b: array![1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0],
+            // b: array![1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0],
+            b: array![
+                16.0 / 135.0,
+                0.0,
+                6656.0 / 12825.0,
+                28561.0 / 56430.0,
+                -9.0 / 50.0,
+                2.0 / 55.0
+            ],
             // nstages - 1
-            c: array![0.5, 0.5, 1.0],
+            // c: array![0.5, 0.5, 1.0],
+            c: array![1.0 / 4.0, 3.0 / 8.0, 12.0 / 13.0, 1.0, 0.5],
             // nstages + 1
-            d: array![0.0, 0.0, 0.0, 0.0, 0.0],
+            // d: array![0.0, 0.0, 0.0, 0.0, 0.0],
+            d: array![
+                25.0 / 216.0,
+                0.0,
+                1408.0 / 2565.0,
+                2197.0 / 4104.0,
+                -1.0 / 5.0,
+                0.0,
+            ],
         }
     }
 
@@ -90,8 +118,19 @@ impl RungeKuttaIntegrator {
                 .eom(self.t, self.pq.view(), self.stages.slice_mut(s![-1, ..]));
             self.pqdot.assign(&self.stages.slice(s![-1, ..]));
 
-            // let error = self.stages.t().dot(&self.d) * h;
-            // println!("err: {}", error);
+            // let error = h * self
+            //     .stages
+            //     .slice(s![..-1, ..])
+            //     .t()
+            //     .dot(&(&self.b - &self.d));
+            // let err = error.dot(&error).powf(1.0 / 10.0);
+            // if err > 0.001 {
+            //     self.params.step_size /= 10.0;
+            //     println!("new step size: {}", self.params.step_size);
+            // } else if err < 0.00001 {
+            //     self.params.step_size *= 10.0;
+            //     println!("new step size: {}", self.params.step_size);
+            // }
 
             Some(self.state())
         }
