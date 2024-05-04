@@ -5,9 +5,11 @@ use ndarray::{array, s, stack, Array, Array1, Array2, ArrayView1, Axis};
 
 pub struct IntegrationParams {
     pub step_size: f64,
+    pub max_step_size: f64,
     pub t0: f64,
     pub pq0: Array1<f64>,
     pub tmax: Option<f64>,
+    pub eps: f64,
 }
 
 pub struct RungeKuttaIntegrator {
@@ -29,9 +31,10 @@ impl RungeKuttaIntegrator {
         let t = params.t0;
         let pq = params.pq0.to_owned();
         let dim = pq.raw_dim();
-        let pqdot = Array::zeros(dim);
-        // nstages + 1
-        let stages = stack![Axis(0), pqdot, pqdot, pqdot, pqdot, pqdot, pqdot, pqdot];
+        let mut pqdot = Array::zeros(dim);
+        ham.eom(t, pq.view(), pqdot.view_mut());
+        // should be nstages + 1, but instead of using the last row, we use self.pqdot
+        let stages = stack![Axis(0), pqdot, pqdot, pqdot, pqdot, pqdot, pqdot];
 
         RungeKuttaIntegrator {
             params,
@@ -74,12 +77,12 @@ impl RungeKuttaIntegrator {
             // nstages + 1
             // d: array![0.0, 0.0, 0.0, 0.0, 0.0],
             d: array![
-                25.0 / 216.0,
+                1.0 / 360.0,
                 0.0,
-                1408.0 / 2565.0,
-                2197.0 / 4104.0,
-                -1.0 / 5.0,
-                0.0,
+                -128.0 / 4275.0,
+                -2197.0 / 75240.0,
+                1.0 / 50.0,
+                2.0 / 55.0,
             ],
         }
     }
@@ -111,28 +114,20 @@ impl RungeKuttaIntegrator {
                 );
             }
 
-            self.pq = h * self.stages.slice(s![..-1, ..]).t().dot(&self.b) + &self.pq;
+            self.pq = h * self.stages.t().dot(&self.b) + &self.pq;
 
-            self.ham.eom(
-                self.t + h,
-                self.pq.view(),
-                self.stages.slice_mut(s![-1, ..]),
-            );
-            self.pqdot.assign(&self.stages.slice(s![-1, ..]));
+            self.ham
+                .eom(self.t + h, self.pq.view(), self.pqdot.view_mut());
 
-            let error = self
-                .stages
-                .slice(s![..-1, ..])
-                .t()
-                .dot(&(&self.b - &self.d));
+            let error = self.stages.t().dot(&self.d);
 
             let err = error.dot(&error).sqrt();
-            let hnew = (0.00000001 / err).powf(1.0 / 5.0) * h * 0.9;
+            let hnew = (self.params.eps / err).powf(0.2) * h * 0.9;
 
-            if hnew < 0.001 {
+            if hnew < self.params.max_step_size {
                 self.params.step_size = hnew;
             } else {
-                self.params.step_size = 0.001;
+                self.params.step_size = self.params.max_step_size;
             }
 
             if hnew.is_nan() {

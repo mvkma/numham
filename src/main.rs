@@ -85,6 +85,7 @@ fn main() {
     // let v2 = 0.2607551013;
     let params = IntegrationParams {
         step_size: 0.001,
+        max_step_size: 0.001,
         t0: 0.0,
         pq0: concatenate![
             Axis(0),
@@ -92,12 +93,13 @@ fn main() {
             array![-1.0, 0.0, 1.0, 0.0, 0.0, 0.0],
         ],
         tmax: None,
+        eps: 1e-8,
     };
 
     let stage_conf = StageConf {
         scale: 2.0,
         steps_per_frame: 20,
-        dt: 0.01,
+        dt: 0.05,
         trail_length: 5000,
         nparticles: threebodyham.num_particles(),
     };
@@ -125,6 +127,7 @@ mod tests {
 
         let params = IntegrationParams {
             step_size: 0.001,
+            max_step_size: 0.001,
             t0: 0.0,
             pq0: concatenate![
                 Axis(0),
@@ -132,6 +135,7 @@ mod tests {
                 array![-1.0, 0.0, 1.0, 0.0, 0.0, 0.0],
             ],
             tmax: None,
+            eps: 1e-8,
         };
 
         let threebodyham = ThreeBodyHamiltonian::new(1.0, 1.0);
