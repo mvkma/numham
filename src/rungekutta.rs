@@ -20,7 +20,7 @@ pub struct RungeKuttaIntegrator {
     pqdot: Array1<f64>,
     stages: Array2<f64>,
     // Butcher tableau
-    a: Array2<f64>,
+    a: [Array1<f64>; 5],
     b: Array1<f64>,
     c: Array1<f64>,
     d: Array1<f64>,
@@ -44,15 +44,11 @@ impl RungeKuttaIntegrator {
             pqdot,
             stages,
             // nstages - 1
-            a: stack![
-                Axis(0),
-                // array![0.5, 0.0, 0.0],
-                // array![0.0, 0.5, 0.0],
-                // array![0.0, 0.0, 1.0],
-                array![1.0 / 4.0, 0.0, 0.0, 0.0, 0.0],
-                array![3.0 / 32.0, 9.0 / 32.0, 0.0, 0.0, 0.0],
-                array![1932.0 / 2197.0, -7200.0 / 2197.0, 7296.0 / 2197.0, 0.0, 0.0],
-                array![439.0 / 216.0, -8.0, 3680.0 / 513.0, -845.0 / 4104.0, 0.0],
+            a: [
+                array![1.0 / 4.0],
+                array![3.0 / 32.0, 9.0 / 32.0],
+                array![1932.0 / 2197.0, -7200.0 / 2197.0, 7296.0 / 2197.0],
+                array![439.0 / 216.0, -8.0, 3680.0 / 513.0, -845.0 / 4104.0],
                 array![
                     -8.0 / 27.0,
                     2.0,
@@ -62,7 +58,6 @@ impl RungeKuttaIntegrator {
                 ],
             ],
             // nstages
-            // b: array![1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0],
             b: array![
                 16.0 / 135.0,
                 0.0,
@@ -72,10 +67,8 @@ impl RungeKuttaIntegrator {
                 2.0 / 55.0
             ],
             // nstages - 1
-            // c: array![0.5, 0.5, 1.0],
             c: array![1.0 / 4.0, 3.0 / 8.0, 12.0 / 13.0, 1.0, 0.5],
             // nstages + 1
-            // d: array![0.0, 0.0, 0.0, 0.0, 0.0],
             d: array![
                 1.0 / 360.0,
                 0.0,
@@ -100,13 +93,8 @@ impl RungeKuttaIntegrator {
 
             self.stages.slice_mut(s![0, ..]).assign(&self.pqdot);
 
-            for (i, (a, c)) in self.a.axis_iter(Axis(0)).zip(&self.c).enumerate() {
-                let dpq = self
-                    .stages
-                    .slice(s![..i + 1, ..])
-                    .t()
-                    .dot(&a.slice(s![..i + 1]))
-                    * h;
+            for (i, (a, c)) in self.a.iter().zip(&self.c).enumerate() {
+                let dpq = self.stages.slice(s![..i + 1, ..]).t().dot(a) * h;
                 self.ham.eom(
                     c.mul_add(h, t),
                     (dpq + &self.pq).view(),
